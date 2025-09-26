@@ -18,10 +18,11 @@ jobs:
       - name: Trigger Polling Workflow
         uses: peter-evans/repository-dispatch@v2
         with:
-         token: ${{ secrets.PAT_TOKEN }}   # instead of GITHUB_TOKEN
-         event-type: poll-container-url
-         client-payload: |
-          {
-           "pr_number": "${{ github.event.pull_request.number }}",
-           "container_id": "${{ steps.generate.outputs.container_id }}"
-          }
+          token: ${{ secrets.PAT_TOKEN }}   # 👈 must be indented 2 spaces
+          repository: priyapriya2/SBOM_REPO
+          event-type: poll-container-url
+          client-payload: |
+            {
+              "pr_number": "${{ github.event.pull_request.number }}",
+              "container_id": "${{ steps.generate.outputs.container_id }}"
+            }
