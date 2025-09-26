@@ -1,21 +1,26 @@
 name: Generate Container
 
 on:
-  workflow_dispatch:  # Manual trigger to generate container ID
+  pull_request:
+    types: [opened, synchronize]
 
 jobs:
   generate:
     runs-on: ubuntu-latest
-    outputs:
-      container_id: ${{ steps.generate.outputs.container_id }}
     steps:
       - name: Generate container ID
         id: generate
         run: |
-          CONTAINER_ID="demo-$(date +%s)"
-          echo "Generated container ID: $CONTAINER_ID"
-          # Pass container ID as workflow output
+          CONTAINER_ID="demo-${RANDOM}"
           echo "container_id=$CONTAINER_ID" >> $GITHUB_OUTPUT
+          echo "Generated container ID: $CONTAINER_ID"
 
-      - name: Display container ID
-        run: echo "Container ID is ${{ steps.generate.outputs.container_id }}"
+      - name: Trigger Polling Workflow
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          event-type: poll-container-url
+          client-payload: |
+            {
+              "pr_number": "${{ github.event.pull_request.number }}",
+              "container_id": "${{ steps.generate.outputs.container_id }}"
+            }
