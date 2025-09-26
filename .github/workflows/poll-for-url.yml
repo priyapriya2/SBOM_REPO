@@ -3,17 +3,18 @@ name: Poll for URL
 on:
   workflow_dispatch:      # Manual trigger for testing
   schedule:
-    - cron: "*/10 * * * *"  # Runs every 10 minutes
+    - cron: "*/10 * * * *"  # Automatic run every 10 minutes
 
 jobs:
   poll:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v3
+
       - name: Get container ID
         id: get_id
         run: |
           # For demo, provide container ID manually if testing
-          # You can replace this with workflow input in real scenario
           CONTAINER_ID="${{ github.event.inputs.container_id || 'demo-1234567890' }}"
           echo "Container ID: $CONTAINER_ID"
           echo "id=$CONTAINER_ID" >> $GITHUB_OUTPUT
@@ -25,15 +26,19 @@ jobs:
           URL="https://example.com/container/$CONTAINER_ID/data"
           echo "Checking URL: $URL"
 
-          # Simulate readiness check: 25% chance ready
+          # Simulate readiness check (25% chance ready)
           if [ $((RANDOM % 4)) -eq 0 ]; then
-            echo "URL is ready! Fetching data..."
-            RESPONSE=$(curl -s "$URL")
-            echo "$RESPONSE" > response.json
-            echo "Response saved to response.json"
+            echo "URL is ready! Generating random JSON..."
 
-            # Upload response as artifact (requires PAT)
-            echo "${{ secrets.PAT_TOKEN }}" | gh auth login --with-token
-            gh release create "container-$CONTAINER_ID" response.json || echo "Release already exists"
-          else
-            echo "URL not ready yet. Will check again in next run."
+            # Random JSON for demo
+            RESPONSE=$(jq -n \
+              --arg cid "$CONTAINER_ID" \
+              --arg status "ready" \
+              '{container_id: $cid, status: $status, timestamp: now | todate}')
+
+            echo "$RESPONSE" > response.json
+            echo "Response saved to response.json:"
+            cat response.json
+
+            # Authenticate with PAT and upload artifact
+            echo "${{ secrets
