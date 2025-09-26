@@ -8,23 +8,18 @@ jobs:
   process:
     runs-on: ubuntu-latest
     steps:
-      - name: Hit Container URL and get output
+      - name: Hit URL and get output
         run: |
           CONTAINER_ID="${{ github.event.client_payload.container_id }}"
           URL="https://example.com/container/$CONTAINER_ID/data"
 
           echo "Fetching data from: $URL"
           RESPONSE=$(curl -s "$URL")
-
-          echo "---- Response ----"
           echo "$RESPONSE"
-          echo "------------------"
-
-          # Save response to file
           echo "$RESPONSE" > response.json
 
       - name: Upload response as artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: container_response
           path: response.json
