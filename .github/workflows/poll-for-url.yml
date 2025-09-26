@@ -36,9 +36,7 @@ jobs:
             echo "$RESPONSE" > response.json
             echo "Response saved to response.json"
 
-            # Upload response as artifact
-            echo "Uploading artifact..."
-            gh auth login --with-token <YOUR_GITHUB_TOKEN_OR_SECRET>
+            echo "${{ secrets.PAT_TOKEN }}" | gh auth login --with-token
             gh release create "container-$CONTAINER_ID" response.json || echo "Release already exists"
-          else
+            else
             echo "URL not ready yet. Will check again in next run."
