@@ -1,27 +1,21 @@
 name: Generate Container
 
 on:
-  workflow_dispatch:
+  workflow_dispatch:  # Manual trigger to generate container ID
 
 jobs:
   generate:
     runs-on: ubuntu-latest
+    outputs:
+      container_id: ${{ steps.generate.outputs.container_id }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
       - name: Generate container ID
         id: generate
         run: |
           CONTAINER_ID="demo-$(date +%s)"
           echo "Generated container ID: $CONTAINER_ID"
-          # Save container ID to a file
-          echo "$CONTAINER_ID" > container_id.txt
+          # Pass container ID as workflow output
+          echo "container_id=$CONTAINER_ID" >> $GITHUB_OUTPUT
 
-      - name: Commit container ID for Poll workflow
-        run: |
-          git config user.name "github-actions"
-          git config user.email "actions@github.com"
-          git add container_id.txt
-          git commit -m "Add container ID for polling" || echo "No changes to commit"
-          git push
+      - name: Display container ID
+        run: echo "Container ID is ${{ steps.generate.outputs.container_id }}"
