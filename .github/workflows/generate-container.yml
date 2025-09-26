@@ -1,0 +1,22 @@
+name: Generate Container
+
+on:
+  workflow_dispatch:
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate a fake container ID
+        run: |
+          CONTAINER_ID="demo-$(date +%s)"
+          echo "CONTAINER_ID=$CONTAINER_ID" >> $GITHUB_ENV
+          echo "Generated container ID: $CONTAINER_ID"
+
+      - name: Save container ID artifact
+        run: echo "${CONTAINER_ID}" > container_id.txt
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: container_id
+          path: container_id.txt
