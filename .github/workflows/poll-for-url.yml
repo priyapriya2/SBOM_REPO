@@ -2,9 +2,12 @@ name: Poll for URL
 
 on:
   schedule:
-    - cron: "*/10 * * * *"  # runs every 10 minutes
+    - cron: "*/10 * * * *"  # every 10 minutes
   repository_dispatch:
     types: [start_poll]      # triggered by Workflow 1
+
+permissions:
+  contents: read
 
 jobs:
   poll:
@@ -14,26 +17,27 @@ jobs:
         id: read
         run: |
           CONTAINER_ID="${{ github.event.client_payload.container_id }}"
+          echo "Container ID: $CONTAINER_ID"
           echo "id=$CONTAINER_ID" >> $GITHUB_OUTPUT
 
-      - name: Poll URL (inline script)
+      - name: Poll URL (inline)
         id: poll
         run: |
           CONTAINER_ID="${{ steps.read.outputs.id }}"
           URL="https://example.com/container/$CONTAINER_ID/data"
 
           echo "Checking URL: $URL"
-          # Fake readiness check (25% chance ready)
+          # Demo: 25% chance ready
           if [ $((RANDOM % 4)) -eq 0 ]; then
             echo "result=ready" >> $GITHUB_OUTPUT
           else
             echo "result=not_ready" >> $GITHUB_OUTPUT
 
-      - name: Trigger Process workflow if ready
+      - name: Trigger Process Workflow if ready
         if: steps.poll.outputs.result == 'ready'
         run: |
           curl -X POST \
-            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Authorization: token ${{ secrets.PAT_TOKEN }}" \
             -H "Accept: application/vnd.github+json" \
             https://api.github.com/repos/${{ github.repository }}/dispatches \
             -d '{"event_type":"url_ready","client_payload":{"container_id":"'"${{ steps.read.outputs.id }}"'"}}'
