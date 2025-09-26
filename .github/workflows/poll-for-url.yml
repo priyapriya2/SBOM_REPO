@@ -2,24 +2,19 @@ name: Poll for URL
 
 on:
   schedule:
-    - cron: "*/10 * * * *" # every 10 minutes
-  workflow_dispatch:
+    - cron: "*/10 * * * *"  # runs every 10 minutes
+  repository_dispatch:
+    types: [start_poll]      # triggered by Workflow 1
 
 jobs:
   poll:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-
-      - name: Download container ID
-        uses: actions/download-artifact@v4
-        with:
-          name: container_id
-          path: .
-
-      - name: Read container ID
+      - name: Get container ID
         id: read
-        run: echo "id=$(cat container_id.txt)" >> $GITHUB_OUTPUT
+        run: |
+          CONTAINER_ID="${{ github.event.client_payload.container_id }}"
+          echo "id=$CONTAINER_ID" >> $GITHUB_OUTPUT
 
       - name: Poll URL (inline script)
         id: poll
@@ -28,15 +23,13 @@ jobs:
           URL="https://example.com/container/$CONTAINER_ID/data"
 
           echo "Checking URL: $URL"
-
-          # Fake check → 25% chance ready
+          # Fake readiness check (25% chance ready)
           if [ $((RANDOM % 4)) -eq 0 ]; then
             echo "result=ready" >> $GITHUB_OUTPUT
           else
             echo "result=not_ready" >> $GITHUB_OUTPUT
-          fi
 
-      - name: Trigger process workflow if ready
+      - name: Trigger Process workflow if ready
         if: steps.poll.outputs.result == 'ready'
         run: |
           curl -X POST \
