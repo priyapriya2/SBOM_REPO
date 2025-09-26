@@ -16,7 +16,7 @@ jobs:
       - name: Save container ID artifact
         run: echo "${CONTAINER_ID}" > container_id.txt
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: container_id
           path: container_id.txt
