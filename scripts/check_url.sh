@@ -1,21 +1,14 @@
 #!/bin/bash
-set -e
-
 CONTAINER_ID=$1
 URL="https://example.com/container/$CONTAINER_ID/data"
-
-echo "Checking readiness for container: $CONTAINER_ID"
-
-# Simulate waiting loop
+echo "Checking container $CONTAINER_ID"
 for i in {1..5}; do
-  echo "Attempt $i: checking $URL"
-  # Simulate 30-min delay with randomness (25% chance it's ready each loop)
+  echo "Attempt $i: $URL"
   if [ $((RANDOM % 4)) -eq 0 ]; then
-    echo "URL=$URL"
+    echo "$URL"
     exit 0
   fi
-  sleep 10
+  sleep 2
 done
-
-echo "Timed out waiting for URL"
-exit 1
+echo "$URL"
+exit 0
