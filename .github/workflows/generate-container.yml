@@ -7,16 +7,17 @@ jobs:
   generate:
     runs-on: ubuntu-latest
     steps:
-      - name: Generate a fake container ID
+      - name: Generate container ID
+        id: generate
         run: |
           CONTAINER_ID="demo-$(date +%s)"
-          echo "CONTAINER_ID=$CONTAINER_ID" >> $GITHUB_ENV
           echo "Generated container ID: $CONTAINER_ID"
+          # Save to workflow output
+          echo "container_id=$CONTAINER_ID" >> $GITHUB_OUTPUT
 
-      - name: Save container ID artifact
-        run: echo "${CONTAINER_ID}" > container_id.txt
-
-      - uses: actions/upload-artifact@v4
+      - name: Set repository environment variable
+        uses: peter-evans/repository-dispatch@v2
         with:
-          name: container_id
-          path: container_id.txt
+          token: ${{ secrets.GITHUB_TOKEN }}
+          event-type: set-container-env
+          client-payload: '{"container_id":"${{ steps.generate.outputs.container_id }}"}'
