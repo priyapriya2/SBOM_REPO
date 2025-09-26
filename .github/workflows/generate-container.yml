@@ -7,12 +7,15 @@ jobs:
   generate:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
       - name: Generate container ID
         id: generate
         run: |
           CONTAINER_ID="demo-$(date +%s)"
           echo "Generated container ID: $CONTAINER_ID"
-          # Save to repository file (or environment) for Poll workflow
+          # Save container ID to a file
           echo "$CONTAINER_ID" > container_id.txt
 
       - name: Commit container ID for Poll workflow
@@ -20,5 +23,5 @@ jobs:
           git config user.name "github-actions"
           git config user.email "actions@github.com"
           git add container_id.txt
-          git commit -m "Add container ID for polling"
+          git commit -m "Add container ID for polling" || echo "No changes to commit"
           git push
