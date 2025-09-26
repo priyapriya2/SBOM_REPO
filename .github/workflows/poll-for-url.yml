@@ -41,4 +41,8 @@ jobs:
             cat response.json
 
             # Authenticate with PAT and upload artifact
-            echo "${{ secrets
+            echo "${{ secrets.PAT_TOKEN }}" | gh auth login --with-token
+            gh release create "container-$CONTAINER_ID" response.json || echo "Release already exists"
+          else
+            echo "URL not ready yet. Will check again in next run."
+          fi
