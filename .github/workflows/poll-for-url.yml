@@ -1,0 +1,46 @@
+name: Poll for URL
+
+on:
+  schedule:
+    - cron: "*/10 * * * *" # every 10 minutes
+  workflow_dispatch:
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Download container ID
+        uses: actions/download-artifact@v3
+        with:
+          name: container_id
+          path: .
+
+      - name: Read container ID
+        id: read
+        run: echo "id=$(cat container_id.txt)" >> $GITHUB_OUTPUT
+
+      - name: Poll URL (inline script)
+        id: poll
+        run: |
+          CONTAINER_ID="${{ steps.read.outputs.id }}"
+          URL="https://example.com/container/$CONTAINER_ID/data"
+
+          echo "Checking URL: $URL"
+
+          # Fake check → 25% chance ready
+          if [ $((RANDOM % 4)) -eq 0 ]; then
+            echo "result=ready" >> $GITHUB_OUTPUT
+          else
+            echo "result=not_ready" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Trigger process workflow if ready
+        if: steps.poll.outputs.result == 'ready'
+        run: |
+          curl -X POST \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/${{ github.repository }}/dispatches \
+            -d '{"event_type":"url_ready","client_payload":{"container_id":"'"${{ steps.read.outputs.id }}"'"}}'
