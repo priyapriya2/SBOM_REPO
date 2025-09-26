@@ -9,34 +9,30 @@ jobs:
   poll:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-
-      - name: Read container ID
-        id: read
+      - name: Get container ID
+        id: get_id
         run: |
-          if [ ! -f container_id.txt ]; then
-            echo "container_id.txt not found!"
-            exit 1
-          fi
-          CONTAINER_ID=$(cat container_id.txt)
+          # For demo, provide container ID manually if testing
+          # You can replace this with workflow input in real scenario
+          CONTAINER_ID="${{ github.event.inputs.container_id || 'demo-1234567890' }}"
           echo "Container ID: $CONTAINER_ID"
           echo "id=$CONTAINER_ID" >> $GITHUB_OUTPUT
 
       - name: Poll URL and process
         id: poll
         run: |
-          CONTAINER_ID="${{ steps.read.outputs.id }}"
+          CONTAINER_ID="${{ steps.get_id.outputs.id }}"
           URL="https://example.com/container/$CONTAINER_ID/data"
           echo "Checking URL: $URL"
 
-          # Simulate readiness check (25% chance ready for demo)
+          # Simulate readiness check: 25% chance ready
           if [ $((RANDOM % 4)) -eq 0 ]; then
             echo "URL is ready! Fetching data..."
             RESPONSE=$(curl -s "$URL")
             echo "$RESPONSE" > response.json
             echo "Response saved to response.json"
 
-            # Authenticate with PAT and upload artifact or release
+            # Upload response as artifact (requires PAT)
             echo "${{ secrets.PAT_TOKEN }}" | gh auth login --with-token
             gh release create "container-$CONTAINER_ID" response.json || echo "Release already exists"
           else
