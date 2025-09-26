@@ -8,18 +8,25 @@ jobs:
   poll:
     runs-on: ubuntu-latest
     steps:
+      # Step 1: Checkout repository so scripts exist
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Step 2: Extract inputs from repository_dispatch event
       - name: Extract inputs
         id: inputs
         run: |
           echo "pr_number=${{ github.event.client_payload.pr_number }}" >> $GITHUB_OUTPUT
           echo "container_id=${{ github.event.client_payload.container_id }}" >> $GITHUB_OUTPUT
 
+      # Step 3: Make script executable and run it
       - name: Poll until container URL is ready
         run: |
           chmod +x scripts/check_url.sh
           URL=$(./scripts/check_url.sh "${{ steps.inputs.outputs.container_id }}")
           echo "container_url=$URL" >> $GITHUB_ENV
 
+      # Step 4: Fetch JSON from the container URL
       - name: Fetch JSON
         id: fetch
         run: |
@@ -28,6 +35,7 @@ jobs:
           SAMPLE_URL=$(echo "$RESPONSE" | jq -r '.sample_url')
           echo "sample_url=$SAMPLE_URL" >> $GITHUB_OUTPUT
 
+      # Step 5: Post result back to PR
       - name: Post result back to PR
         uses: peter-evans/create-or-update-comment@v3
         with:
