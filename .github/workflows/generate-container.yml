@@ -18,7 +18,7 @@ jobs:
       - name: Trigger Polling Workflow
         uses: peter-evans/repository-dispatch@v2
         with:
-         token: ${{ secrets.REPO_TOKEN }}   # instead of GITHUB_TOKEN
+         token: ${{ secrets.PAT_TOKEN }}   # instead of GITHUB_TOKEN
          event-type: poll-container-url
          client-payload: |
           {
