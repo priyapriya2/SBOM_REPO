@@ -3,10 +3,6 @@ name: Generate Container
 on:
   workflow_dispatch:
 
-permissions:
-  contents: read
-  actions: write
-
 jobs:
   generate:
     runs-on: ubuntu-latest
@@ -16,12 +12,13 @@ jobs:
         run: |
           CONTAINER_ID="demo-$(date +%s)"
           echo "Generated container ID: $CONTAINER_ID"
-          echo "container_id=$CONTAINER_ID" >> $GITHUB_OUTPUT
+          # Save to repository file (or environment) for Poll workflow
+          echo "$CONTAINER_ID" > container_id.txt
 
-      - name: Trigger Poll Workflow
+      - name: Commit container ID for Poll workflow
         run: |
-          curl -X POST \
-            -H "Authorization: token ${{ secrets.PAT_TOKEN }}" \
-            -H "Accept: application/vnd.github+json" \
-            https://api.github.com/repos/${{ github.repository }}/dispatches \
-            -d '{"event_type":"start_poll","client_payload":{"container_id":"'"${{ steps.generate.outputs.container_id }}"'"}}'
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add container_id.txt
+          git commit -m "Add container ID for polling"
+          git push
