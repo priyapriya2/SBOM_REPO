@@ -1,7 +1,7 @@
 name: Poll for URL
 
 on:
-  workflow_dispatch:      # Manual trigger
+  workflow_dispatch:      # Manual trigger for testing
   schedule:
     - cron: "*/10 * * * *"  # Runs every 10 minutes
 
@@ -29,14 +29,15 @@ jobs:
           URL="https://example.com/container/$CONTAINER_ID/data"
           echo "Checking URL: $URL"
 
-          # Simulate readiness check (for demo)
+          # Simulate readiness check (25% chance ready for demo)
           if [ $((RANDOM % 4)) -eq 0 ]; then
             echo "URL is ready! Fetching data..."
             RESPONSE=$(curl -s "$URL")
             echo "$RESPONSE" > response.json
             echo "Response saved to response.json"
 
+            # Authenticate with PAT and upload artifact or release
             echo "${{ secrets.PAT_TOKEN }}" | gh auth login --with-token
             gh release create "container-$CONTAINER_ID" response.json || echo "Release already exists"
-            else
+          else
             echo "URL not ready yet. Will check again in next run."
