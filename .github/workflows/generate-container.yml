@@ -12,12 +12,9 @@ jobs:
         run: |
           CONTAINER_ID="demo-$(date +%s)"
           echo "Generated container ID: $CONTAINER_ID"
-          # Save to workflow output
-          echo "container_id=$CONTAINER_ID" >> $GITHUB_OUTPUT
-
-      - name: Set repository environment variable
-        uses: peter-evans/repository-dispatch@v2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          event-type: set-container-env
-          client-payload: '{"container_id":"${{ steps.generate.outputs.container_id }}"}'
+          # Trigger Poll workflow with container ID
+          curl -X POST \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/${{ github.repository }}/dispatches \
+            -d '{"event_type":"start_poll","client_payload":{"container_id":"'"$CONTAINER_ID"'"}}'
