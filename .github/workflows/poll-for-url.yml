@@ -22,32 +22,30 @@ jobs:
       # Step 3: Make script executable and run it safely
       - name: Poll until container URL is ready
         run: |
-          # Ensure script exists
           if [ ! -f scripts/check_url.sh ]; then
             echo "❌ scripts/check_url.sh not found!"
             exit 1
           fi
-
           chmod +x scripts/check_url.sh
-
-          # Run script but capture only the final URL to avoid GITHUB_ENV errors
           URL=$(./scripts/check_url.sh "${{ steps.inputs.outputs.container_id }}" | tail -n 1 || true)
           echo "container_url=$URL" >> $GITHUB_ENV
           echo "Container URL: $URL"
 
-      # Step 4: Fetch JSON from the container URL (simulated)
+      # Step 4: Fetch JSON (simulated)
       - name: Fetch JSON
         id: fetch
         run: |
-          # Simulate JSON response (replace with real curl if needed)
           RESPONSE='{"sample_url": "https://files.example.com/artifact-123.zip"}'
-          echo "Response: $RESPONSE"
           SAMPLE_URL=$(echo "$RESPONSE" | jq -r '.sample_url')
           echo "sample_url=$SAMPLE_URL" >> $GITHUB_OUTPUT
 
-      # Step 5: Print results (simulate PR comment)
-      - name: Print result
-        run: |
-          echo "✅ Container ID: ${{ steps.inputs.outputs.container_id }}"
-          echo "📦 URL: ${{ env.container_url }}"
-          echo "🔗 Sample URL: ${{ steps.fetch.outputs.sample_url }}"
+      # Step 5: Post result back to PR
+      - name: Comment on PR
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          token: ${{ secrets.PAT_TOKEN }}
+          issue-number: ${{ steps.inputs.outputs.pr_number }}
+          body: |
+            ✅ Container ID: `${{ steps.inputs.outputs.container_id }}`
+            📦 URL: ${{ env.container_url }}
+            🔗 Sample URL: ${{ steps.fetch.outputs.sample_url }}
