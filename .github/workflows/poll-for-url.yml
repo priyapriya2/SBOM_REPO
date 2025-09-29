@@ -46,6 +46,9 @@ jobs:
           token: ${{ secrets.PAT_TOKEN }}
           issue-number: ${{ steps.inputs.outputs.pr_number }}
           body: |
-            ✅ Container ID: `${{ steps.inputs.outputs.container_id }}`
-            📦 URL: ${{ env.container_url }}
-            🔗 Sample URL: ${{ steps.fetch.outputs.sample_url }}
+                Container ID: `${{ steps.inputs.outputs.container_id }}`
+                URL: ${{ env.container_url }}
+                Sample URL: ${{ steps.fetch.outputs.sample_url }}
+                Container ID: `${{ steps.inputs.outputs.container_id }}`
+                Repository: `${{ steps.inputs.outputs.repository }}`
+                Organization: `${{ steps.inputs.outputs.organization }}`
