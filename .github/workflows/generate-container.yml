@@ -24,4 +24,6 @@ jobs:
           {
            "pr_number": "${{ github.event.pull_request.number }}",
            "container_id": "${{ steps.generate.outputs.container_id }}"
+           "repository": "${{ github.repository }}",
+           "organization": "${{ github.repository_owner }}"
           }
