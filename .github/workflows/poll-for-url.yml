@@ -23,6 +23,7 @@ jobs:
       - name: Run check script
         id: check
         run: |
+          chmod +x scripts/check_url.sh
           URL=$(./scripts/check_url.sh "${{ steps.inputs.outputs.container_id }}" | tail -n 1 || true)
           echo "container_url=$URL" >> $GITHUB_OUTPUT
           echo "Final container URL: $URL"
