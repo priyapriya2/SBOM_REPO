@@ -1,51 +1,43 @@
 name: Poll for Container URL
 
 on:
+  schedule:
+    - cron: "*/10 * * * *"  # Every 10 minutes
   repository_dispatch:
     types: [poll-container-url]
+  workflow_dispatch:
 
 jobs:
   poll:
     runs-on: ubuntu-latest
     steps:
-      # Step 1: Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # Step 2: Extract inputs from repository_dispatch event
       - name: Extract inputs
         id: inputs
         run: |
           echo "pr_number=${{ github.event.client_payload.pr_number }}" >> $GITHUB_OUTPUT
           echo "container_id=${{ github.event.client_payload.container_id }}" >> $GITHUB_OUTPUT
 
-      # Step 3: Make script executable and run it safely
-      - name: Poll until container URL is ready
+      - name: Run check script
+        id: check
         run: |
-          if [ ! -f scripts/check_url.sh ]; then
-            echo "❌ scripts/check_url.sh not found!"
-            exit 1
-          fi
           chmod +x scripts/check_url.sh
-          URL=$(./scripts/check_url.sh "${{ steps.inputs.outputs.container_id }}" | tail -n 1 || true)
-          echo "container_url=$URL" >> $GITHUB_ENV
-          echo "Container URL: $URL"
+          URL=$(./scripts/check_url.sh "${{ steps.inputs.outputs.container_id }}" || true)
+          echo "container_url=$URL" >> $GITHUB_OUTPUT
 
-      # Step 4: Fetch JSON (simulated)
-      - name: Fetch JSON
-        id: fetch
+      - name: Stop if URL not ready
+        if: steps.check.outputs.container_url == ''
         run: |
-          RESPONSE='{"sample_url": "https://files.example.com/artifact-123.zip"}'
-          SAMPLE_URL=$(echo "$RESPONSE" | jq -r '.sample_url')
-          echo "sample_url=$SAMPLE_URL" >> $GITHUB_OUTPUT
+          echo "❌ URL not ready yet, will retry in 10 minutes."
+          exit 0
 
-      # Step 5: Post result back to PR
-      - name: Comment on PR
+      - name: Post result back to PR
+        if: steps.check.outputs.container_url != ''
         uses: peter-evans/create-or-update-comment@v3
         with:
-          token: ${{ secrets.PAT_TOKEN }}
           issue-number: ${{ steps.inputs.outputs.pr_number }}
           body: |
             ✅ Container ID: `${{ steps.inputs.outputs.container_id }}`
-            📦 URL: ${{ env.container_url }}
-            🔗 Sample URL: ${{ steps.fetch.outputs.sample_url }}
+            📦 URL: ${{ steps.check.outputs.container_url }}
