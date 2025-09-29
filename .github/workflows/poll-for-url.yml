@@ -38,7 +38,9 @@ jobs:
         if: steps.check.outputs.container_url != ''
         uses: peter-evans/create-or-update-comment@v3
         with:
+          token: ${{ secrets.PAT_TOKEN }}   # <--- use PAT, not GITHUB_TOKEN
+          repository: ${{ github.repository }}
           issue-number: ${{ steps.inputs.outputs.pr_number }}
           body: |
-            ✅ Container ID: `${{ steps.inputs.outputs.container_id }}`
-            📦 URL: ${{ steps.check.outputs.container_url }}
+             Container ID: `${{ steps.inputs.outputs.container_id }}`
+             URL: ${{ steps.check.outputs.container_url }}
