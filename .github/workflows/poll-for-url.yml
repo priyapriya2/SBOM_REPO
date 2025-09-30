@@ -19,8 +19,14 @@ jobs:
       - name: Extract inputs
         id: inputs
         run: |
-          echo "pr_number=${{ github.event.client_payload.pr_number }}" >> $GITHUB_OUTPUT
-          echo "container_id=${{ github.event.client_payload.container_id }}" >> $GITHUB_OUTPUT
+          PR_NUMBER="${{ github.event.client_payload.pr_number }}"
+          CONTAINER_ID="${{ github.event.client_payload.container_id }}"
+          if [ -z "$PR_NUMBER" ] || [ -z "$CONTAINER_ID" ]; then
+            echo "❌ Missing PR number or container ID in payload. Exiting..."
+            exit 1
+          fi
+          echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
+          echo "container_id=$CONTAINER_ID" >> $GITHUB_OUTPUT
 
       # 3️⃣ Check if container already posted using GitHub Script
       - name: Check if container already posted
@@ -78,11 +84,12 @@ jobs:
             Container ID: `${{ steps.inputs.outputs.container_id }}`
             URL: ${{ steps.check.outputs.container_url }}
 
-      # 8️⃣ Add label to mark PR as processed
+      # 8️⃣ Add label to mark PR as processed (FIXED)
       - name: Add 'container-posted' label
         if: steps.check.outputs.container_url != ''
         uses: actions-ecosystem/action-add-labels@v1
         with:
           github_token: ${{ secrets.PAT_TOKEN }}
           labels: container-posted
-          issue_number: ${{ steps.inputs.outputs.pr_number }}
+          number: ${{ steps.inputs.outputs.pr_number }}   # <- corrected from 'issue_number'
+          repo: ${{ github.repository }}                # optional, explicit
