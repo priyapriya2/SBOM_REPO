@@ -11,15 +11,40 @@ jobs:
   poll:
     runs-on: ubuntu-latest
     steps:
+      # 1️⃣ Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      # 2️⃣ Extract inputs from the event payload
       - name: Extract inputs
         id: inputs
         run: |
           echo "pr_number=${{ github.event.client_payload.pr_number }}" >> $GITHUB_OUTPUT
           echo "container_id=${{ github.event.client_payload.container_id }}" >> $GITHUB_OUTPUT
 
+      # 3️⃣ Check if PR already has container posted (using label)
+      - name: Check if container already posted
+        id: skip
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.PAT_TOKEN }}
+          script: |
+            const pr_number = parseInt("${{ steps.inputs.outputs.pr_number }}");
+            const labels = await github.rest.issues.listLabelsOnIssue({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr_number,
+            });
+            const exists = labels.data.some(l => l.name === "container-posted");
+            return exists;
+
+      - name: Stop workflow if already processed
+        if: steps.skip.outputs.result == 'true'
+        run: |
+          echo "Container URL already posted for PR #${{ steps.inputs.outputs.pr_number }}. Exiting..."
+          exit 0
+
+      # 4️⃣ Run your container check script
       - name: Run check script
         id: check
         run: |
@@ -28,19 +53,30 @@ jobs:
           echo "container_url=$URL" >> $GITHUB_OUTPUT
           echo "Final container URL: $URL"
 
+      # 5️⃣ Stop if URL not ready yet
       - name: Stop if URL not ready
         if: steps.check.outputs.container_url == ''
         run: |
           echo "❌ URL not ready yet, will retry in 10 minutes."
           exit 0
 
+      # 6️⃣ Post container URL as PR comment
       - name: Post result back to PR
         if: steps.check.outputs.container_url != ''
         uses: peter-evans/create-or-update-comment@v3
         with:
-          token: ${{ secrets.PAT_TOKEN }}   # <--- use PAT, not GITHUB_TOKEN
+          token: ${{ secrets.PAT_TOKEN }}
           repository: ${{ github.repository }}
           issue-number: ${{ steps.inputs.outputs.pr_number }}
           body: |
-             Container ID: `${{ steps.inputs.outputs.container_id }}`
-             URL: ${{ steps.check.outputs.container_url }}
+            Container ID: `${{ steps.inputs.outputs.container_id }}`
+            URL: ${{ steps.check.outputs.container_url }}
+
+      # 7️⃣ Add label to mark PR as processed
+      - name: Add 'container-posted' label
+        if: steps.check.outputs.container_url != ''
+        uses: actions-ecosystem/action-add-labels@v1
+        with:
+          github_token: ${{ secrets.PAT_TOKEN }}
+          labels: container-posted
+          issue_number: ${{ steps.inputs.outputs.pr_number }}
