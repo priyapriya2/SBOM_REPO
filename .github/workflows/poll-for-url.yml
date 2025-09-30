@@ -22,12 +22,17 @@ jobs:
           echo "pr_number=${{ github.event.client_payload.pr_number }}" >> $GITHUB_OUTPUT
           echo "container_id=${{ github.event.client_payload.container_id }}" >> $GITHUB_OUTPUT
 
-      # 3️⃣ Check if PR already has container posted (using label)
+      # 3️⃣ Check if container already posted using GitHub Script
       - name: Check if container already posted
         id: skip
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.PAT_TOKEN }}
+          debug: false
+          user-agent: actions/github-script
+          result-encoding: json
+          retries: 0
+          retry-exempt-status-codes: 400,401,403,404,422
           script: |
             const pr_number = parseInt("${{ steps.inputs.outputs.pr_number }}");
             const labels = await github.rest.issues.listLabelsOnIssue({
@@ -38,13 +43,14 @@ jobs:
             const exists = labels.data.some(l => l.name === "container-posted");
             return exists;
 
+      # 4️⃣ Stop workflow if already processed
       - name: Stop workflow if already processed
         if: steps.skip.outputs.result == 'true'
         run: |
           echo "Container URL already posted for PR #${{ steps.inputs.outputs.pr_number }}. Exiting..."
           exit 0
 
-      # 4️⃣ Run your container check script
+      # 5️⃣ Run your container check script
       - name: Run check script
         id: check
         run: |
@@ -53,14 +59,14 @@ jobs:
           echo "container_url=$URL" >> $GITHUB_OUTPUT
           echo "Final container URL: $URL"
 
-      # 5️⃣ Stop if URL not ready yet
+      # 6️⃣ Stop if URL not ready yet
       - name: Stop if URL not ready
         if: steps.check.outputs.container_url == ''
         run: |
           echo "❌ URL not ready yet, will retry in 10 minutes."
           exit 0
 
-      # 6️⃣ Post container URL as PR comment
+      # 7️⃣ Post container URL as PR comment
       - name: Post result back to PR
         if: steps.check.outputs.container_url != ''
         uses: peter-evans/create-or-update-comment@v3
@@ -72,7 +78,7 @@ jobs:
             Container ID: `${{ steps.inputs.outputs.container_id }}`
             URL: ${{ steps.check.outputs.container_url }}
 
-      # 7️⃣ Add label to mark PR as processed
+      # 8️⃣ Add label to mark PR as processed
       - name: Add 'container-posted' label
         if: steps.check.outputs.container_url != ''
         uses: actions-ecosystem/action-add-labels@v1
